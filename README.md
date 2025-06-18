@@ -6,6 +6,13 @@ A standardized Playwright testing integration for DrevOps-based Drupal projects.
 
 This project provides a complete Playwright testing setup that can be integrated into any DrevOps-based Drupal project. It includes Docker configuration, test helpers, CI/CD integration, and standardized practices for end-to-end testing.
 
+## Requirements
+
+- Git
+- Python 3 with PyYAML
+- Docker and Docker Compose
+- A DrevOps-based Drupal project
+
 ## Features
 
 - 🚀 Easy integration into existing Drupal projects
@@ -18,12 +25,29 @@ This project provides a complete Playwright testing setup that can be integrated
 
 ## Quick Start
 
+### Option 1: One-line Installation (Recommended)
+
 ```bash
+curl -fsSL https://raw.githubusercontent.com/ivangrynenko/drupal-playwright/main/install.sh | bash
+```
+
+This will:
+- Download the installation script
+- Clone the repository to a temporary directory
+- Install Playwright integration into your project
+- Clean up all temporary files automatically
+
+### Option 2: Clone and Install
+
+```bash
+# Clone the repository
+git clone https://github.com/ivangrynenko/drupal-playwright.git
+
 # Run the installation script
-./install.sh /path/to/your/drupal/project
+./drupal-playwright/install.sh /path/to/your/drupal/project
 
 # Or use the interactive installer
-./install.sh
+./drupal-playwright/install.sh
 ```
 
 ## Project Structure

@@ -14,8 +14,18 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Script directory
+# Script directory and mode detection
+SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Check if running via curl (script dir would be in temp or current directory)
+if [[ "$SCRIPT_DIR" == "/tmp" ]] || [[ "$SCRIPT_DIR" == "." ]] || [[ ! -d "$SCRIPT_DIR/templates" ]]; then
+    CURL_MODE=true
+    TEMP_REPO_DIR="/tmp/.drupal-playwright-$$"
+    GITHUB_REPO="https://github.com/ivangrynenko/drupal-playwright"
+else
+    CURL_MODE=false
+fi
 
 # Function to display usage
 usage() {
@@ -118,6 +128,23 @@ backup_file() {
     fi
 }
 
+# Function to cleanup temporary files
+cleanup() {
+    if [[ "$CURL_MODE" == "true" ]]; then
+        print_info "Cleaning up temporary files..."
+        if [[ -d "$TEMP_REPO_DIR" ]]; then
+            rm -rf "$TEMP_REPO_DIR"
+        fi
+        # Remove the script itself if running via curl
+        if [[ -f "$SCRIPT_PATH" ]]; then
+            rm -f "$SCRIPT_PATH"
+        fi
+    fi
+}
+
+# Set trap to cleanup on exit
+trap cleanup EXIT
+
 # Main installation process
 main() {
     echo -e "${GREEN}Drupal Playwright Integration Installer${NC}"
@@ -126,6 +153,28 @@ main() {
     
     # Check Python dependencies
     check_python_deps
+    
+    # If in curl mode, download the repository
+    if [[ "$CURL_MODE" == "true" ]]; then
+        print_info "Downloading Drupal Playwright repository..."
+        
+        # Check if git is available
+        if ! command -v git &> /dev/null; then
+            print_error "Git is required but not installed."
+            print_info "Please install Git and try again."
+            exit 1
+        fi
+        
+        # Clone the repository to temporary directory
+        git clone --quiet "$GITHUB_REPO" "$TEMP_REPO_DIR" || {
+            print_error "Failed to download repository from $GITHUB_REPO"
+            exit 1
+        }
+        
+        # Update SCRIPT_DIR to point to the downloaded repo
+        SCRIPT_DIR="$TEMP_REPO_DIR"
+        print_success "Repository downloaded successfully"
+    fi
     
     # Get target directory
     if [[ -z "$TARGET_DIR" ]]; then
@@ -241,7 +290,14 @@ EOF
     echo "2. Prepare test environment: ahoy test-playwright-prepare"
     echo "3. Run tests: ahoy test-playwright"
     echo ""
-    echo "For more information, see: $SCRIPT_DIR/README.md"
+    
+    if [[ "$CURL_MODE" == "true" ]]; then
+        echo "For more information, see: https://github.com/ivangrynenko/drupal-playwright"
+        echo ""
+        print_info "Installation files will be cleaned up automatically."
+    else
+        echo "For more information, see: $SCRIPT_DIR/README.md"
+    fi
 }
 
 # Run main function
