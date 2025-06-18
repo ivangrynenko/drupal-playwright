@@ -1,6 +1,20 @@
-# Claude Code GitHub Action
+# Claude GitHub Actions
 
-This repository includes a GitHub Action that allows you to interact with Claude Code directly from GitHub issues, pull requests, and comments.
+This repository includes two GitHub Actions for interacting with Claude AI:
+
+## Available Workflows
+
+### 1. Claude API Assistant (`claude-api.yml`)
+A simple workflow that uses the Anthropic API directly to respond to requests in issues and comments.
+
+**Features:**
+- Responds to `@claude` mentions in issues and comments
+- Posts Claude's response as a comment
+- Can be triggered manually via workflow dispatch
+- Uses Claude 3 Sonnet model
+
+### 2. Claude Code (`claude-code.yml`) 
+Full Claude Code integration for making code changes (Note: Currently being updated to work with Claude Code CLI).
 
 ## Setup
 

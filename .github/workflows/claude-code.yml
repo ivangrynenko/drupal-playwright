@@ -33,14 +33,14 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Claude Code
+      - name: Install dependencies
         run: |
-          pip install claude-code
+          pip install anthropic
 
       - name: Extract prompt from event
         id: extract_prompt
@@ -61,6 +61,49 @@ jobs:
             echo "prompt=$PROMPT" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create Claude Script
+        run: |
+          cat > claude_code.py << 'EOF'
+          import os
+          import sys
+          import anthropic
+          import subprocess
+
+          def run_command(cmd):
+              result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+              return result.stdout, result.stderr, result.returncode
+
+          def main():
+              prompt = sys.argv[1] if len(sys.argv) > 1 else "Help improve this codebase"
+              
+              client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+              
+              # Get current directory files
+              stdout, _, _ = run_command("find . -type f -name '*.py' -o -name '*.yml' -o -name '*.md' -o -name '*.sh' | grep -v '.git' | head -20")
+              files = stdout.strip().split('\n') if stdout else []
+              
+              context = f"I'm in a GitHub repository. Here are some key files:\n"
+              for file in files[:10]:  # Limit to first 10 files
+                  if file and os.path.exists(file):
+                      with open(file, 'r') as f:
+                          content = f.read()[:500]  # First 500 chars
+                          context += f"\n{file}:\n{content}...\n"
+              
+              full_prompt = f"{context}\n\nUser request: {prompt}\n\nPlease provide specific code changes or improvements."
+              
+              message = client.messages.create(
+                  model="claude-3-sonnet-20240229",
+                  max_tokens=1000,
+                  temperature=0,
+                  messages=[{"role": "user", "content": full_prompt}]
+              )
+              
+              print(message.content[0].text)
+
+          if __name__ == "__main__":
+              main()
+          EOF
+
       - name: Run Claude Code
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -69,8 +112,18 @@ jobs:
           git config --global user.email "claude-bot@github.com"
           git config --global user.name "Claude Code Bot"
           
-          # Run Claude with the extracted prompt
-          claude "${{ steps.extract_prompt.outputs.prompt }}" --yes-to-all
+          # Run Claude script
+          python claude_code.py "${{ steps.extract_prompt.outputs.prompt }}" > claude_response.txt
+          
+          # For now, just save the response
+          echo "Claude's response has been saved to claude_response.txt"
+          
+          # Create a simple implementation file based on the prompt
+          echo "# Implementation based on: ${{ steps.extract_prompt.outputs.prompt }}" > implementation.md
+          echo "" >> implementation.md
+          echo "This is a placeholder implementation. The full Claude Code CLI integration is pending." >> implementation.md
+          echo "" >> implementation.md
+          cat claude_response.txt >> implementation.md
 
       - name: Check for changes
         id: check_changes
