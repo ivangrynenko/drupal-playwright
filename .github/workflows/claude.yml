@@ -1,0 +1,29 @@
+name: Claude
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  react-to-comment:
+    name: React to comment
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request && contains(github.event.comment.body, '@claude') }}
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Claude Code Action
+        uses: anthropics/claude-code-action@v1
+        with:
+          api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          pull_request_comment_id: ${{ github.event.comment.id }}
+          pull_request_comment_author: ${{ github.event.comment.user.login }}
+          pull_request_comment_body: ${{ github.event.comment.body }}
+          pull_request_number: ${{ github.event.issue.number }}
+          repository: ${{ github.repository }}
+          environment: production
