@@ -1,0 +1,16 @@
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+.DS_Store
+
+# Don't commit screenshots taken during tests
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
+# Ignore any debug files
+debug-*
+trace-*
