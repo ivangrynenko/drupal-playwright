@@ -89,7 +89,11 @@ import { AuthHelper } from './helpers/auth';
 
 test('authenticated user test', async ({ page }) => {
   const auth = new AuthHelper(page);
+  
+  // Login using predefined role
   await auth.loginAs('administrator');
+  
+  await auth.loginWithCredentials('env_username', 'env_password');
   
   // Perform authenticated actions
 });
@@ -120,9 +124,41 @@ The tests are configured to:
 
 ## Environment Variables
 
+### Test Configuration
 - `PLAYWRIGHT_BASE_URL` - Base URL for tests (default: `http://nginx:8080`)
 - `PLAYWRIGHT_HEADLESS` - Run in headless mode (default: `true`)
 - `CI` - Set to `true` in CI environments
+
+### Test User Credentials
+Environment variables can be used to override default test user credentials:
+
+- `PLAYWRIGHT_ADMIN_USERNAME` - Administrator username (default: `admin`)
+- `PLAYWRIGHT_ADMIN_PASSWORD` - Administrator password (default: `admin`)
+- `PLAYWRIGHT_AUTH_USERNAME` - Authenticated user username (default: `authenticated`)
+- `PLAYWRIGHT_AUTH_PASSWORD` - Authenticated user password (default: `authenticated`)
+
+For project-specific roles:
+- `PLAYWRIGHT_SITE_ADMIN_USERNAME` / `PLAYWRIGHT_SITE_ADMIN_PASSWORD`
+- `PLAYWRIGHT_CONTENT_AUTHOR_USERNAME` / `PLAYWRIGHT_CONTENT_AUTHOR_PASSWORD`
+- `PLAYWRIGHT_CONTENT_APPROVER_USERNAME` / `PLAYWRIGHT_CONTENT_APPROVER_PASSWORD`
+
+### Using Environment Variables
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Update `.env` with your specific values:
+   ```bash
+   PLAYWRIGHT_BASE_URL=https://mysite.example.com
+   PLAYWRIGHT_ADMIN_USERNAME=myAdminUser
+   PLAYWRIGHT_ADMIN_PASSWORD=mySecurePassword
+   ```
+
+3. The environment variables will be automatically used by:
+   - The `setup-test-users.sh` script when creating users
+   - The `AuthHelper` class when logging in during tests
 
 ## Troubleshooting
 
@@ -157,9 +193,29 @@ test('slow test', async ({ page }) => {
 
 ### Adding New Roles
 
-1. Update `setup-test-users.sh` to create users with new roles
-2. Update `tests/helpers/auth.ts` to add role mappings
-3. Use in tests: `await auth.loginAs('new_role')`
+1. Update `setup-test-users.sh` to create users with new roles:
+   ```bash
+   # Add environment variable support
+   MY_ROLE_USERNAME="${PLAYWRIGHT_MY_ROLE_USERNAME:-my_role_user}"
+   MY_ROLE_PASSWORD="${PLAYWRIGHT_MY_ROLE_PASSWORD:-my_role_pass}"
+   create_user_if_not_exists "$MY_ROLE_USERNAME" "$MY_ROLE_PASSWORD" "my_role"
+   ```
+
+2. Update `tests/helpers/auth.ts` to add role mappings:
+   ```typescript
+   'my_role': { 
+     username: process.env.PLAYWRIGHT_MY_ROLE_USERNAME || 'my_role_user', 
+     password: process.env.PLAYWRIGHT_MY_ROLE_PASSWORD || 'my_role_pass' 
+   },
+   ```
+
+3. Add to `.env.example`:
+   ```bash
+   PLAYWRIGHT_MY_ROLE_USERNAME=my_role_user
+   PLAYWRIGHT_MY_ROLE_PASSWORD=my_role_pass
+   ```
+
+4. Use in tests: `await auth.loginAs('my_role')`
 
 ### Custom Helpers
 
