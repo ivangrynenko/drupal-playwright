@@ -93,8 +93,7 @@ test('authenticated user test', async ({ page }) => {
   // Login using predefined role
   await auth.loginAs('administrator');
   
-  // Or login with specific credentials
-  await auth.loginWithCredentials('custom_user', 'custom_password');
+  await auth.loginWithCredentials('env_username', 'env_password');
   
   // Perform authenticated actions
 });
