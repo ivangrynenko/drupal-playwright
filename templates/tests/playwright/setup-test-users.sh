@@ -33,23 +33,37 @@ create_user_if_not_exists() {
 
 echo "Setting up Playwright test users..."
 
+# Get credentials from environment variables with defaults
+ADMIN_USERNAME="${PLAYWRIGHT_ADMIN_USERNAME:-admin}"
+ADMIN_PASSWORD="${PLAYWRIGHT_ADMIN_PASSWORD:-admin}"
+AUTH_USERNAME="${PLAYWRIGHT_AUTH_USERNAME:-authenticated}"
+AUTH_PASSWORD="${PLAYWRIGHT_AUTH_PASSWORD:-authenticated}"
+
 # Create test users for common roles
-create_user_if_not_exists "authenticated" "authenticated" ""
+create_user_if_not_exists "$AUTH_USERNAME" "$AUTH_PASSWORD" ""
 
 # Ensure admin user exists with known password for tests
-if drush user:information "admin" >/dev/null 2>&1; then
-  echo -e "${YELLOW}[UPDATE]${NC} Setting admin password for tests"
-  drush user:password admin --password="admin" >/dev/null 2>&1
+if drush user:information "$ADMIN_USERNAME" >/dev/null 2>&1; then
+  echo -e "${YELLOW}[UPDATE]${NC} Setting $ADMIN_USERNAME password for tests"
+  drush user:password "$ADMIN_USERNAME" --password="$ADMIN_PASSWORD" >/dev/null 2>&1
 else
-  echo -e "${GREEN}[CREATE]${NC} Creating admin user"
-  drush user:create "admin" --password="admin" --mail="admin@example.com"
-  drush user:role:add "administrator" "admin"
+  echo -e "${GREEN}[CREATE]${NC} Creating $ADMIN_USERNAME user"
+  drush user:create "$ADMIN_USERNAME" --password="$ADMIN_PASSWORD" --mail="$ADMIN_USERNAME@example.com"
+  drush user:role:add "administrator" "$ADMIN_USERNAME"
 fi
 
 # Add project-specific users here
-# Example for CivicTheme projects:
-# create_user_if_not_exists "site_admin" "site_admin" "civictheme_site_administrator"
-# create_user_if_not_exists "content_author" "content_author" "civictheme_content_author"
-# create_user_if_not_exists "content_approver" "content_approver" "civictheme_content_approver"
+# Example for custom roles:
+# SITE_ADMIN_USERNAME="${PLAYWRIGHT_SITE_ADMIN_USERNAME:-site_admin}"
+# SITE_ADMIN_PASSWORD="${PLAYWRIGHT_SITE_ADMIN_PASSWORD:-site_admin}"
+# create_user_if_not_exists "$SITE_ADMIN_USERNAME" "$SITE_ADMIN_PASSWORD" "site_administrator"
+# 
+# CONTENT_AUTHOR_USERNAME="${PLAYWRIGHT_CONTENT_AUTHOR_USERNAME:-content_author}"
+# CONTENT_AUTHOR_PASSWORD="${PLAYWRIGHT_CONTENT_AUTHOR_PASSWORD:-content_author}"
+# create_user_if_not_exists "$CONTENT_AUTHOR_USERNAME" "$CONTENT_AUTHOR_PASSWORD" "content_author"
+# 
+# CONTENT_APPROVER_USERNAME="${PLAYWRIGHT_CONTENT_APPROVER_USERNAME:-content_approver}"
+# CONTENT_APPROVER_PASSWORD="${PLAYWRIGHT_CONTENT_APPROVER_PASSWORD:-content_approver}"
+# create_user_if_not_exists "$CONTENT_APPROVER_USERNAME" "$CONTENT_APPROVER_PASSWORD" "content_approver"
 
 echo -e "${GREEN}Test users setup complete!${NC}"

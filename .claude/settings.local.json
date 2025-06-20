@@ -10,7 +10,12 @@
       "Bash(git push:*)",
       "Bash(mkdir:*)",
       "Bash(rm:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "mcp__github__create_issue",
+      "mcp__github__get_issue",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "mcp__github__create_pull_request"
     ],
     "deny": []
   }
