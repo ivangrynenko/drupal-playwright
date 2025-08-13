@@ -2,16 +2,16 @@ ahoyapi: v2
 
 commands:
   up:
-    usage: Start the Playwright standalone container.
+    usage: Start the Playwright container.
     cmd: |
-      echo "Starting Playwright standalone container..."
+      echo "Starting Playwright container..."
       docker compose up -d
       echo "Container started. Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
 
   down:
-    usage: Stop and remove the Playwright standalone container.
+    usage: Stop and remove the Playwright container.
     cmd: |
-      echo "Stopping Playwright standalone container..."
+      echo "Stopping Playwright container..."
       docker compose down
 
   shell:
@@ -36,25 +36,25 @@ commands:
         echo "Set it with: export PLAYWRIGHT_BASE_URL=https://your-site.com"
       fi
       echo "Running tests against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.standalone.ts $@"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"
 
   test-headed:
     usage: Run Playwright tests in headed mode (requires X11 forwarding).
     cmd: |
       echo "Running tests in headed mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.standalone.ts $@"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.remote.ts $@"
 
   test-debug:
     usage: Run Playwright tests in debug mode.
     cmd: |
       echo "Running tests in debug mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.standalone.ts $@"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"
 
   test-ui:
     usage: Run Playwright tests with UI mode.
     cmd: |
       echo "Running tests in UI mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.standalone.ts $@"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.remote.ts $@"
 
   report:
     usage: Open the last test report in browser.
@@ -83,7 +83,7 @@ commands:
   status:
     usage: Show container status and current configuration.
     cmd: |
-      echo "=== Playwright Standalone Status ==="
+      echo "=== Playwright Status ==="
       echo "Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
       echo "Headless mode: ${PLAYWRIGHT_HEADLESS:-true}"
       echo ""
@@ -91,7 +91,7 @@ commands:
       docker compose ps
 
   install-browsers:
-    usage: Install additional browsers (webkit).
+    usage: Install all Playwright browsers and their OS dependencies.
     cmd: |
       echo "Installing all Playwright browsers..."
       docker compose exec -T playwright bash -c "npx playwright install --with-deps"
