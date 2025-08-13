@@ -1,0 +1,102 @@
+ahoyapi: v2
+
+commands:
+  up:
+    usage: Start the Playwright standalone container.
+    cmd: |
+      echo "Starting Playwright standalone container..."
+      docker compose up -d
+      echo "Container started. Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+
+  down:
+    usage: Stop and remove the Playwright standalone container.
+    cmd: |
+      echo "Stopping Playwright standalone container..."
+      docker compose down
+
+  shell:
+    usage: Open a shell in the Playwright container.
+    cmd: |
+      docker compose exec playwright bash
+
+  prepare:
+    usage: Install Playwright dependencies and browsers.
+    cmd: |
+      echo "Installing Playwright dependencies..."
+      docker compose exec -T playwright bash -c "npm install && npx playwright install chromium firefox webkit"
+      echo "Creating log directories..."
+      docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots /app/.logs/playwright/html-report"
+      echo "Playwright environment is ready!"
+
+  test:
+    usage: Run Playwright tests against remote URL. Set PLAYWRIGHT_BASE_URL environment variable.
+    cmd: |
+      if [ -z "$PLAYWRIGHT_BASE_URL" ]; then
+        echo "WARNING: PLAYWRIGHT_BASE_URL not set. Using default: https://example.com"
+        echo "Set it with: export PLAYWRIGHT_BASE_URL=https://your-site.com"
+      fi
+      echo "Running tests against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.standalone.ts $@"
+
+  test-headed:
+    usage: Run Playwright tests in headed mode (requires X11 forwarding).
+    cmd: |
+      echo "Running tests in headed mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.standalone.ts $@"
+
+  test-debug:
+    usage: Run Playwright tests in debug mode.
+    cmd: |
+      echo "Running tests in debug mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.standalone.ts $@"
+
+  test-ui:
+    usage: Run Playwright tests with UI mode.
+    cmd: |
+      echo "Running tests in UI mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.standalone.ts $@"
+
+  report:
+    usage: Open the last test report in browser.
+    cmd: |
+      if [ -f "./.logs/playwright/html-report/index.html" ]; then
+        echo "Opening test report in browser..."
+        open ./.logs/playwright/html-report/index.html 2>/dev/null || \
+        xdg-open ./.logs/playwright/html-report/index.html 2>/dev/null || \
+        echo "Please open ./.logs/playwright/html-report/index.html in your browser"
+      else
+        echo "No test report found. Run tests first to generate results."
+      fi
+
+  logs:
+    usage: Show Playwright container logs.
+    cmd: |
+      docker compose logs -f playwright
+
+  clean:
+    usage: Clean test artifacts and logs.
+    cmd: |
+      echo "Cleaning test artifacts..."
+      rm -rf ./.logs/playwright/* ./.logs/screenshots/*
+      echo "Test artifacts cleaned."
+
+  status:
+    usage: Show container status and current configuration.
+    cmd: |
+      echo "=== Playwright Standalone Status ==="
+      echo "Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      echo "Headless mode: ${PLAYWRIGHT_HEADLESS:-true}"
+      echo ""
+      echo "Container status:"
+      docker compose ps
+
+  install-browsers:
+    usage: Install additional browsers (webkit).
+    cmd: |
+      echo "Installing all Playwright browsers..."
+      docker compose exec -T playwright bash -c "npx playwright install --with-deps"
+      echo "All browsers installed!"
+
+entrypoint:
+  - docker
+  - docker compose

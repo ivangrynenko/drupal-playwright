@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.52.0-focal
+    container_name: playwright
+    volumes:
+      - ./tests/playwright:/app/tests/playwright
+      - ./.logs:/app/.logs
+    environment:
+      # Target URL for remote testing
+      PLAYWRIGHT_BASE_URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}
+      # Headless mode
+      PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
+      # Browser configuration
+      PLAYWRIGHT_CHROMIUM_ARGS: '--no-sandbox --disable-setuid-sandbox'
+      # Test environment
+      CI: ${CI:-false}
+      NODE_ENV: ${NODE_ENV:-test}
+      # Timezone
+      TZ: ${TZ:-UTC}
+    working_dir: /app/tests/playwright
+    command: tail -f /dev/null
+    networks:
+      - playwright-net
+
+networks:
+  playwright-net:
+    driver: bridge
