@@ -67,32 +67,100 @@ Add the Playwright service after the `chrome` service (or at the end of services
 Add these commands after the `test-bdd` command:
 
 ```yaml
-  test-playwright-prepare:
-    usage: Prepare environment for Playwright tests (create users, install deps).
+  up:
+    usage: Start the Playwright container.
     cmd: |
-      echo "Preparing Playwright test environment..."
-      ahoy cli ./tests/playwright/setup-test-users.sh
-      docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots && cd /app/tests/playwright && npm install && npx playwright install chromium firefox"
-      echo "Playwright test environment is ready!"
+      set -e
+      echo "Starting Playwright container..."
+      if ! docker compose up -d; then
+        echo "Error: Failed to start Playwright container"
+        exit 1
+      fi
+      echo "Container started successfully. Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
 
-  test-playwright:
-    usage: Run Playwright end-to-end tests.
+  down:
+    usage: Stop and remove the Playwright container.
     cmd: |
-      ahoy test-playwright-prepare > /dev/null 2>&1
-      docker compose exec -T playwright bash -c "cd /app/tests/playwright && npm test $@"
+      set -e
+      echo "Stopping Playwright container..."
+      if ! docker compose down; then
+        echo "Error: Failed to stop Playwright container"
+        exit 1
+      fi
+      echo "Container stopped successfully."
 
-  test-playwright-headed:
-    usage: Run Playwright tests in headed mode (shows browser).
+  prepare:
+    usage: Install Playwright dependencies and browsers.
     cmd: |
-      docker compose exec -T playwright bash -c "cd /app/tests/playwright && npm install && npm run test:headed"
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      echo "Installing Playwright dependencies..."
+      if ! docker compose exec -T playwright bash -c "npm install"; then
+        echo "Error: Failed to install npm dependencies"
+        exit 1
+      fi
+      if ! docker compose exec -T playwright bash -c "npx playwright install chromium firefox webkit"; then
+        echo "Error: Failed to install Playwright browsers"
+        exit 1
+      fi
+      echo "Creating log directories..."
+      if ! docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots /app/.logs/playwright/html-report"; then
+        echo "Error: Failed to create log directories"
+        exit 1
+      fi
+      echo "Playwright environment is ready!"
 
-  test-playwright-debug:
+  test:
+    usage: Run Playwright tests against remote URL. Set PLAYWRIGHT_BASE_URL environment variable.
+    cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      if [ -z "$PLAYWRIGHT_BASE_URL" ]; then
+        echo "WARNING: PLAYWRIGHT_BASE_URL not set. Using default: https://example.com"
+        echo "Set it with: export PLAYWRIGHT_BASE_URL=https://your-site.com"
+      fi
+      echo "Running tests against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Tests failed or encountered an error"
+        exit 1
+      fi
+
+  test-headed:
+    usage: Run Playwright tests in headed mode (requires X11 forwarding).
+    cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      echo "Running tests in headed mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Headed tests failed or encountered an error"
+        exit 1
+      fi
+
+  test-debug:
     usage: Run Playwright tests in debug mode.
     cmd: |
-      docker compose exec -T playwright bash -c "cd /app/tests/playwright && npm install && PWDEBUG=1 npm test $@"
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      echo "Running tests in debug mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Debug tests failed or encountered an error"
+        exit 1
+      fi
 
-  test-playwright-report:
-    usage: Open Playwright test report in browser.
+  report:
+    usage: Open the last test report in browser.
     cmd: |
       if [ -f "./.logs/playwright/html-report/index.html" ]; then
         echo "Opening test report in browser..."
@@ -100,7 +168,7 @@ Add these commands after the `test-bdd` command:
         xdg-open ./.logs/playwright/html-report/index.html 2>/dev/null || \
         echo "Please open ./.logs/playwright/html-report/index.html in your browser"
       else
-        echo "No test report found. Run 'ahoy test-playwright' first to generate test results."
+        echo "No test report found. Run tests first to generate results."
       fi
 ```
 
@@ -122,21 +190,24 @@ If using CircleCI, add this step to your build job after the Behat test:
           command: |
             set -e
             echo "Preparing Playwright test environment..."
-            
+
             # Create test users
             echo "Creating test users..."
             docker compose exec -T cli ./tests/playwright/setup-test-users.sh
-            
+
             # Install Playwright dependencies and browsers
             echo "Installing Playwright dependencies..."
-            docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots && cd /app/tests/playwright && npm ci"
-            docker compose exec -T playwright bash -c "cd /app/tests/playwright && npx playwright install --with-deps chromium firefox"
-            
+            docker compose exec -T playwright bash -c \
+              "mkdir -p /app/.logs/screenshots && cd /app/tests/playwright && npm ci"
+            docker compose exec -T playwright bash -c \
+              "cd /app/tests/playwright && npx playwright install --with-deps chromium firefox"
+
             echo "Playwright test environment is ready!"
-            
+
             # Run Playwright tests with proper environment variable
             echo "Running Playwright tests..."
-            docker compose exec -T -e PLAYWRIGHT_BASE_URL=http://nginx:8080 playwright bash -c "cd /app/tests/playwright && npm test"
+            docker compose exec -T -e PLAYWRIGHT_BASE_URL=http://nginx:8080 playwright bash -c \
+              "cd /app/tests/playwright && npm test"
           no_output_timeout: 30m
 ```
 
@@ -175,11 +246,14 @@ Add these lines to your project's `.gitignore`:
 ahoy down
 ahoy up
 
+# Start container
+ahoy up
+
 # Prepare test environment
-ahoy test-playwright-prepare
+ahoy prepare
 
 # Run tests
-ahoy test-playwright
+ahoy test
 ```
 
 ## Troubleshooting

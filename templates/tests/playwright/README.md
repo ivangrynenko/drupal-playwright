@@ -23,27 +23,27 @@ This directory contains Playwright end-to-end tests for the Drupal project.
 
 ### Run all tests in headless mode:
 ```bash
-ahoy test-playwright
+ahoy test
 ```
 
 ### Run specific test file:
 ```bash
-ahoy test-playwright tests/homepage.spec.ts
+ahoy test tests/homepage.spec.ts
 ```
 
 ### Run tests in headed mode (visible browser):
 ```bash
-ahoy test-playwright-headed
+ahoy test-headed
 ```
 
 ### Run tests in debug mode:
 ```bash
-ahoy test-playwright-debug
+ahoy test-debug
 ```
 
 ### View test report:
 ```bash
-ahoy test-playwright-report
+ahoy report
 ```
 
 ## Test Structure
@@ -127,7 +127,7 @@ The tests are configured to:
 ## Troubleshooting
 
 ### Tests fail with "browser not installed"
-Run: `ahoy test-playwright-prepare`
+Run: `ahoy prepare`
 
 ### Cannot connect to nginx
 Ensure Docker containers are running: `ahoy up`

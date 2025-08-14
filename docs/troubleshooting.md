@@ -176,7 +176,7 @@ docker compose cp playwright:/app/.logs/screenshots/. "${DREVOPS_CI_ARTIFACTS}/s
 
 2. Reduce screenshot size:
    ```typescript
-   await page.screenshot({ 
+   await page.screenshot({
      fullPage: false,
      quality: 80 // For JPEG
    });
@@ -193,7 +193,7 @@ docker compose cp playwright:/app/.logs/screenshots/. "${DREVOPS_CI_ARTIFACTS}/s
 
 #### Enable Debug Mode
 ```bash
-ahoy test-playwright-debug
+ahoy test-debug
 ```
 
 #### Pause Test Execution
@@ -227,7 +227,7 @@ await page.click('button', { delay: 100 }); // 100ms delay
 1. Use Firefox for ARM compatibility:
    ```typescript
    // Run only Firefox tests
-   ahoy test-playwright --project=firefox
+   ahoy test --project=firefox
    ```
 
 2. Or use Chromium ARM image in `docker-compose.override.yml`:
@@ -257,7 +257,7 @@ await page.click('button', { delay: 100 }); // 100ms delay
 1. **Check Playwright documentation**: https://playwright.dev/
 2. **Enable verbose logging**:
    ```bash
-   DEBUG=pw:* ahoy test-playwright
+   DEBUG=pw:* ahoy test
    ```
 3. **Inspect test artifacts**: Check `.logs/playwright/test-results/` for error details
 4. **Ask for help**: Include:
