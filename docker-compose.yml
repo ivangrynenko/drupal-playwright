@@ -2,7 +2,7 @@
 
 services:
   playwright:
-    image: mcr.microsoft.com/playwright:v1.52.0-focal
+    image: mcr.microsoft.com/playwright:v1.52.0
     container_name: playwright
     volumes:
       - ./tests/playwright:/app/tests/playwright

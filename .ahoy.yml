@@ -175,4 +175,4 @@ commands:
 
 entrypoint:
   - docker
-  - docker compose
+  - compose
