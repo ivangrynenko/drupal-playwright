@@ -1,0 +1,17 @@
+{
+  "name": "drupal-playwright-tests",
+  "version": "1.0.0",
+  "description": "Playwright end-to-end tests for Drupal",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report ../../.logs/playwright/html-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.52.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
