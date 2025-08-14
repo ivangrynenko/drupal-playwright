@@ -1,4 +1,4 @@
-version: '3.8'
+# Modern Docker Compose doesn't require version specification
 
 services:
   playwright:
@@ -12,15 +12,17 @@ services:
       PLAYWRIGHT_BASE_URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}
       # Headless mode
       PLAYWRIGHT_HEADLESS: ${PLAYWRIGHT_HEADLESS:-true}
-      # Browser configuration
-      PLAYWRIGHT_CHROMIUM_ARGS: '--no-sandbox --disable-setuid-sandbox'
+      # Browser configuration - customize for your security requirements
+      # Default includes container-safe flags, override via environment variable for security
+      PLAYWRIGHT_CHROMIUM_ARGS: ${PLAYWRIGHT_CHROMIUM_ARGS:---no-sandbox --disable-setuid-sandbox}
       # Test environment
       CI: ${CI:-false}
       NODE_ENV: ${NODE_ENV:-test}
       # Timezone
       TZ: ${TZ:-UTC}
     working_dir: /app/tests/playwright
-    command: tail -f /dev/null
+    # Keep container running for exec commands
+    command: sleep infinity
     networks:
       - playwright-net
 
