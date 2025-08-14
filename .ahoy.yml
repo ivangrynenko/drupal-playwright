@@ -4,57 +4,118 @@ commands:
   up:
     usage: Start the Playwright container.
     cmd: |
+      set -e
       echo "Starting Playwright container..."
-      docker compose up -d
-      echo "Container started. Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      if ! docker compose up -d; then
+        echo "Error: Failed to start Playwright container"
+        exit 1
+      fi
+      echo "Container started successfully. Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
 
   down:
     usage: Stop and remove the Playwright container.
     cmd: |
+      set -e
       echo "Stopping Playwright container..."
-      docker compose down
+      if ! docker compose down; then
+        echo "Error: Failed to stop Playwright container"
+        exit 1
+      fi
+      echo "Container stopped successfully."
 
   shell:
     usage: Open a shell in the Playwright container.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       docker compose exec playwright bash
 
   prepare:
     usage: Install Playwright dependencies and browsers.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       echo "Installing Playwright dependencies..."
-      docker compose exec -T playwright bash -c "npm install && npx playwright install chromium firefox webkit"
+      if ! docker compose exec -T playwright bash -c "npm install"; then
+        echo "Error: Failed to install npm dependencies"
+        exit 1
+      fi
+      if ! docker compose exec -T playwright bash -c "npx playwright install chromium firefox webkit"; then
+        echo "Error: Failed to install Playwright browsers"
+        exit 1
+      fi
       echo "Creating log directories..."
-      docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots /app/.logs/playwright/html-report"
+      if ! docker compose exec -T playwright bash -c "mkdir -p /app/.logs/screenshots /app/.logs/playwright/html-report"; then
+        echo "Error: Failed to create log directories"
+        exit 1
+      fi
       echo "Playwright environment is ready!"
 
   test:
     usage: Run Playwright tests against remote URL. Set PLAYWRIGHT_BASE_URL environment variable.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       if [ -z "$PLAYWRIGHT_BASE_URL" ]; then
         echo "WARNING: PLAYWRIGHT_BASE_URL not set. Using default: https://example.com"
         echo "Set it with: export PLAYWRIGHT_BASE_URL=https://your-site.com"
       fi
       echo "Running tests against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Tests failed or encountered an error"
+        exit 1
+      fi
 
   test-headed:
     usage: Run Playwright tests in headed mode (requires X11 forwarding).
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       echo "Running tests in headed mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.remote.ts $@"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PLAYWRIGHT_HEADLESS=false playwright bash -c "npm run test:headed -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Headed tests failed or encountered an error"
+        exit 1
+      fi
 
   test-debug:
     usage: Run Playwright tests in debug mode.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       echo "Running tests in debug mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" -e PWDEBUG=1 playwright bash -c "npm test -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: Debug tests failed or encountered an error"
+        exit 1
+      fi
 
   test-ui:
     usage: Run Playwright tests with UI mode.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       echo "Running tests in UI mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
-      docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.remote.ts $@"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: UI tests failed or encountered an error"
+        exit 1
+      fi
 
   report:
     usage: Open the last test report in browser.
@@ -76,9 +137,16 @@ commands:
   clean:
     usage: Clean test artifacts and logs.
     cmd: |
+      set -e
       echo "Cleaning test artifacts..."
-      rm -rf ./.logs/playwright/* ./.logs/screenshots/*
-      echo "Test artifacts cleaned."
+      # Safely clean only specific directories if they exist
+      if [ -d "./.logs/playwright" ]; then
+        find ./.logs/playwright -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+      fi
+      if [ -d "./.logs/screenshots" ]; then
+        find ./.logs/screenshots -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+      fi
+      echo "Test artifacts cleaned safely."
 
   status:
     usage: Show container status and current configuration.
@@ -93,9 +161,17 @@ commands:
   install-browsers:
     usage: Install all Playwright browsers and their OS dependencies.
     cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
       echo "Installing all Playwright browsers..."
-      docker compose exec -T playwright bash -c "npx playwright install --with-deps"
-      echo "All browsers installed!"
+      if ! docker compose exec -T playwright bash -c "npx playwright install --with-deps"; then
+        echo "Error: Failed to install browsers and dependencies"
+        exit 1
+      fi
+      echo "All browsers installed successfully!"
 
 entrypoint:
   - docker
