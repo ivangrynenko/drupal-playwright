@@ -47,14 +47,15 @@ Add the Playwright service after the `chrome` service (or at the end of services
       TZ: ${DREVOPS_TZ:-Australia/Melbourne}
       DREVOPS_LOCALDEV_URL: ${DREVOPS_LOCALDEV_URL:-${COMPOSE_PROJECT_NAME:-drupal}.docker.amazee.io}
       PLAYWRIGHT_HEADLESS: 'true'
-      PLAYWRIGHT_CHROMIUM_ARGS: '--no-sandbox --disable-setuid-sandbox'
+      PLAYWRIGHT_CHROMIUM_ARGS: '${PLAYWRIGHT_CHROMIUM_ARGS:---no-sandbox --disable-setuid-sandbox}'
       CI: '${CI:-}'
       PLAYWRIGHT_BASE_URL: 'http://nginx:8080'
     depends_on:
       - nginx
       - php
     working_dir: /app
-    command: tail -f /dev/null
+    # Keep container running for exec commands
+    command: sleep infinity
     networks:
       - default
     labels:
