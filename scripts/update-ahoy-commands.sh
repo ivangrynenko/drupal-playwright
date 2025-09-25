@@ -40,7 +40,7 @@ head -n "$INSERT_LINE" "$AHOY_FILE" > "$TEMP_FILE"
 
 cat >> "$TEMP_FILE" << 'EOF'
 
-  # Playwright testing commands (standalone integration)
+  # Playwright testing commands (remote integration)
   up:
     usage: Start the Playwright container.
     cmd: |
