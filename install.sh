@@ -287,8 +287,9 @@ EOF
     echo ""
     echo "Next steps:"
     echo "1. Rebuild your Docker containers: ahoy down && ahoy up"
-    echo "2. Prepare test environment: ahoy test-playwright-prepare"
-    echo "3. Run tests: ahoy test-playwright"
+    echo "2. Start container: ahoy up"
+    echo "3. Prepare test environment: ahoy prepare"
+    echo "4. Run tests: ahoy test"
     echo ""
     
     if [[ "$CURL_MODE" == "true" ]]; then

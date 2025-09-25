@@ -86,9 +86,9 @@ drupal-playwright/
    - Artifact collection
 
 4. **Developer Commands**
-   - `ahoy test-playwright` - Run tests
-   - `ahoy test-playwright-debug` - Debug tests
-   - `ahoy test-playwright-report` - View test reports
+   - `ahoy test` - Run tests
+   - `ahoy test-debug` - Debug tests
+   - `ahoy report` - View test reports
 
 ## Requirements
 
@@ -139,16 +139,16 @@ Edit `playwright.config.ts` to customize:
 
 ```bash
 # Run all tests
-ahoy test-playwright
+ahoy test
 
 # Run specific test file
-ahoy test-playwright tests/login.spec.ts
+ahoy test tests/login.spec.ts
 
 # Debug mode
-ahoy test-playwright-debug
+ahoy test-debug
 
 # View test report
-ahoy test-playwright-report
+ahoy report
 ```
 
 ### Writing Tests

@@ -1,46 +1,6 @@
-#!/bin/bash
-#
-# Add Playwright commands to .ahoy.yml
-#
+ahoyapi: v2
 
-set -e
-
-AHOY_FILE="$1"
-
-if [[ ! -f "$AHOY_FILE" ]]; then
-    echo "Error: $AHOY_FILE does not exist"
-    exit 1
-fi
-
-# Check if playwright commands already exist
-if grep -q "test-playwright:\|playwright:" "$AHOY_FILE"; then
-    echo "Playwright commands already exist in .ahoy.yml"
-    exit 0
-fi
-
-# Find the line number where we should insert (after test-bdd or test commands)
-INSERT_LINE=$(grep -n "test-bdd:" "$AHOY_FILE" | tail -1 | cut -d: -f1)
-if [[ -z "$INSERT_LINE" ]]; then
-    INSERT_LINE=$(grep -n "test:" "$AHOY_FILE" | tail -1 | cut -d: -f1)
-fi
-
-if [[ -z "$INSERT_LINE" ]]; then
-    echo "Warning: Could not find test commands section. Appending to end of file."
-    INSERT_LINE=$(wc -l < "$AHOY_FILE")
-fi
-
-# Calculate the insertion point (after the test-bdd command block)
-INSERT_LINE=$((INSERT_LINE + 3))
-
-# Create temporary file with new commands
-TEMP_FILE=$(mktemp)
-
-# Split the file and insert new commands
-head -n "$INSERT_LINE" "$AHOY_FILE" > "$TEMP_FILE"
-
-cat >> "$TEMP_FILE" << 'EOF'
-
-  # Playwright testing commands (remote integration)
+commands:
   up:
     usage: Start the Playwright container.
     cmd: |
@@ -62,6 +22,16 @@ cat >> "$TEMP_FILE" << 'EOF'
         exit 1
       fi
       echo "Container stopped successfully."
+
+  shell:
+    usage: Open a shell in the Playwright container.
+    cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      docker compose exec playwright bash
 
   prepare:
     usage: Install Playwright dependencies and browsers.
@@ -133,6 +103,20 @@ cat >> "$TEMP_FILE" << 'EOF'
         exit 1
       fi
 
+  test-ui:
+    usage: Run Playwright tests with UI mode.
+    cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      echo "Running tests in UI mode against: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      if ! docker compose exec -T -e PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL}" playwright bash -c "npm run test:ui -- --config=playwright.config.remote.ts $@"; then
+        echo "Error: UI tests failed or encountered an error"
+        exit 1
+      fi
+
   report:
     usage: Open the last test report in browser.
     cmd: |
@@ -144,12 +128,51 @@ cat >> "$TEMP_FILE" << 'EOF'
       else
         echo "No test report found. Run tests first to generate results."
       fi
-EOF
 
-# Append the rest of the file
-tail -n +"$((INSERT_LINE + 1))" "$AHOY_FILE" >> "$TEMP_FILE"
+  logs:
+    usage: Show Playwright container logs.
+    cmd: |
+      docker compose logs -f playwright
 
-# Replace the original file
-mv "$TEMP_FILE" "$AHOY_FILE"
+  clean:
+    usage: Clean test artifacts and logs.
+    cmd: |
+      set -e
+      echo "Cleaning test artifacts..."
+      # Safely clean only specific directories if they exist
+      if [ -d "./.logs/playwright" ]; then
+        find ./.logs/playwright -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+      fi
+      if [ -d "./.logs/screenshots" ]; then
+        find ./.logs/screenshots -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
+      fi
+      echo "Test artifacts cleaned safely."
 
-echo "Successfully added Playwright commands to .ahoy.yml"
+  status:
+    usage: Show container status and current configuration.
+    cmd: |
+      echo "=== Playwright Status ==="
+      echo "Target URL: ${PLAYWRIGHT_BASE_URL:-https://example.com}"
+      echo "Headless mode: ${PLAYWRIGHT_HEADLESS:-true}"
+      echo ""
+      echo "Container status:"
+      docker compose ps
+
+  install-browsers:
+    usage: Install all Playwright browsers and their OS dependencies.
+    cmd: |
+      set -e
+      if ! docker compose ps | grep -q "playwright.*running"; then
+        echo "Error: Playwright container is not running. Start it with 'ahoy up'"
+        exit 1
+      fi
+      echo "Installing all Playwright browsers..."
+      if ! docker compose exec -T playwright bash -c "npx playwright install --with-deps"; then
+        echo "Error: Failed to install browsers and dependencies"
+        exit 1
+      fi
+      echo "All browsers installed successfully!"
+
+entrypoint:
+  - docker
+  - compose

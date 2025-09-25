@@ -44,11 +44,14 @@ cd /path/to/your/drupal/project
 ahoy down
 ahoy up
 
+# Start container
+ahoy up
+
 # Prepare test environment
-ahoy test-playwright-prepare
+ahoy prepare
 
 # Run your first test
-ahoy test-playwright
+ahoy test
 ```
 
 ## What Gets Installed
@@ -134,10 +137,10 @@ docker compose ps
 # playwright_1    ... Up
 
 # Run example tests
-ahoy test-playwright
+ahoy test
 
 # View test report
-ahoy test-playwright-report
+ahoy report
 ```
 
 ## Troubleshooting
