@@ -19,9 +19,9 @@ test.describe('Environment Variable Login Tests', () => {
   test('Login with custom credentials', async ({ page }) => {
     const auth = new AuthHelper(page);
     
-    // Use environment variables or defaults
-    const username = process.env.PLAYWRIGHT_CUSTOM_USERNAME || 'admin';
-    const password = process.env.PLAYWRIGHT_CUSTOM_PASSWORD || 'admin';
+    // Reuse the admin credentials so this reflects the documented configuration
+    const username = process.env.PLAYWRIGHT_ADMIN_USERNAME ?? 'admin';
+    const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? 'admin';
     
     // Login with specific credentials
     await auth.loginWithCredentials(username, password);

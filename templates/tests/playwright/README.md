@@ -89,12 +89,12 @@ import { AuthHelper } from './helpers/auth';
 
 test('authenticated user test', async ({ page }) => {
   const auth = new AuthHelper(page);
-  
-  // Login using predefined role
-  await auth.loginAs('administrator');
-  
-  await auth.loginWithCredentials('env_username', 'env_password');
-  
+
+  const username = process.env.PLAYWRIGHT_ADMIN_USERNAME ?? 'admin';
+  const password = process.env.PLAYWRIGHT_ADMIN_PASSWORD ?? 'admin';
+
+  await auth.loginWithCredentials(username, password);
+
   // Perform authenticated actions
 });
 ```
